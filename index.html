@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pokemon Test (Hidden List)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>Type-a-Pokemon — Guess to Reveal</h1>
+      <p>Type a Pokemon name into the box. If it's one of the Gen 1 Pokemo, its secret will be shown.</p>
+    </header>
+
+    <section class="game">
+      <aside clas\s="word-list" aria-label="Hidden words to find">
+        <h2>Pokemon to find</h2>
+        <ul id="wordsUL" class="words" aria-hidden="true"></ul>
+        <div class="progress" id="progress"></div>
+      </aside>
+
+      <div class="play-area">
+        <label for="wordInput" class="visually-hidden">Enter a guessed word</label>
+        <input id="wordInput" type="text" placeholder="Type a guess and press Enter" aria-label="Word input" autocomplete="off" />
+        <div class="buttons">
+          <button id="submitBtn" class="primary">Submit</button>
+          <button id="resetBtn" class="secondary" aria-label="Reset progress">Reset Progress</button>
+          <button id="giveUpBtn" class="danger" aria-label="Give up and reveal all">Give Up</button>
+        </div>
+
+        <div id="message" role="status" aria-live="polite" class="message"></div>
+
+        <section class="revealed" aria-label="Revealed secrets">
+          <div class="revealed-header">
+            <h2>Revealed</h2>
+            <div class="reveal-controls">
+              <button id="prevBtn" class="nav" aria-label="Show previous revealed word" title="Previous" disabled>◀</button>
+              <span id="navInfo" class="nav-info" aria-live="polite"></span>
+              <button id="nextBtn" class="nav" aria-label="Show next revealed word" title="Next" disabled>▶</button>
+            </div>
+          </div>
+          <div id="revealedList" class="revealed-list"></div>
+        </section>
+      </div>
+    </section>
+
+    <footer>
+      <small>Progress is saved locally. The actual list is hidden from players; edit script.js if you want to customize words.</small>
+    </footer>
+  </main>
+
+  <!-- celebration overlay will be created by script when needed -->
+  <script src="script.js"></script>
+</body>
+</html>
