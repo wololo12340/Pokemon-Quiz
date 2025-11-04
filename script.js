@@ -1,12 +1,11 @@
 // script.js - expects words.json (same directory) and loads it at startup.
-// Minor fix: input is now cleared when a guess is accepted (new reveal, already-revealed acceptance,
-// or nidoran multi-reveal). Previous version only flashed the input but didn't clear it.
-// Debounced auto-submit (200ms). Skips auto-submit if user already entered every matching index.
-// Clears input and gives distinct feedback: green for new reveals, yellow for already-revealed.
-// Preserves nidoran multi-reveal and confetti on completion.
-// Note: fetch("words.json") requires serving the files via HTTP (file:// won't work in most browsers).
+// Updated: when you type a name that you've already entered previously, the UI
+// now shows a helpful inline hint ("You already entered 'Pidgeot' — press Enter to view it.")
+// and will NOT auto-submit. All prior behaviors are preserved (debounced auto-submit,
+// skip auto-submit when only previously-entered matches exist, input clearing on accept,
+// distinct feedback for new vs already-revealed, nidoran multi-reveal, confetti).
 
-let wordsData = []; // filled by fetch
+let wordsData = []; // populated from words.json at init
 const STORAGE_KEY = "revealedWords_v1";
 
 const wordsUL = document.getElementById("wordsUL");
@@ -115,7 +114,7 @@ function renderRevealed() {
   nextBtn.disabled = currentIndex >= revealed.length - 1;
 }
 
-// Feedback visuals
+// Visual flash helper
 function flashElement(el, color, duration = 220) {
   if (!el) return;
   const prev = el.style.backgroundColor;
@@ -127,20 +126,16 @@ function flashElement(el, color, duration = 220) {
   }, duration);
 }
 
-// ACCEPT + CLEAR helpers (fix: ensure input cleared when accepted)
+// Accept + clear helpers
 function acceptAndClearNew() {
-  // clear input first so user can continue typing immediately
   input.value = "";
   try { input.focus(); } catch(e){}
-  // new reveal: green on input and brief flash on input
   flashElement(input, "#e6ffef");
 }
 
 function acceptAndClearAlready(idx) {
-  // clear input first
   input.value = "";
   try { input.focus(); } catch(e){}
-  // already revealed: yellow on input and flash the list item
   flashElement(input, "#fff7df");
   const li = wordsUL.querySelector(`li[data-idx="${idx}"]`);
   if (li) flashElement(li, "#fff7df");
@@ -196,9 +191,57 @@ function findIndexByInput(rawInput) {
   return { idx: matching[0], item: wordsData[matching[0]], alreadyRevealed: true };
 }
 
+// --- NEW: show hint when user types a name they've already entered ---
+// Returns true if a "already typed" hint was shown (so callers can avoid auto-submit).
+function showAlreadyTypedHintIfApplicable(raw) {
+  const normalized = normalizeText(raw);
+  if (!normalized) {
+    // clear hint if input empty
+    // Don't overwrite other messages (we only clear hint if message matches our hint pattern)
+    if (messageEl.dataset.hint === "already-typed") {
+      showMessage("", {}); // clear
+      delete messageEl.dataset.hint;
+    }
+    return false;
+  }
+
+  const matching = normalizedIndexMap[normalized];
+  if (!matching || matching.length === 0) {
+    if (messageEl.dataset.hint === "already-typed") {
+      showMessage("", {}); delete messageEl.dataset.hint;
+    }
+    return false;
+  }
+
+  // If every matching index is in userRevealed, show a hint and do NOT auto-submit.
+  const allTyped = matching.every(idx => userRevealed.has(idx));
+  if (allTyped) {
+    // use the display name from first matching entry (they are identical after normalization)
+    const display = wordsData[matching[0]].word;
+    showMessage(`You already entered "${display}". Press Enter to view it.`, { positive: false });
+    // mark dataset so we can clear later without messing other messages
+    messageEl.dataset.hint = "already-typed";
+    return true;
+  } else {
+    // there is at least one unentered match; clear prior hint if present
+    if (messageEl.dataset.hint === "already-typed") {
+      showMessage("", {}); delete messageEl.dataset.hint;
+    }
+    return false;
+  }
+}
+
 // Auto-submit scheduling
 function scheduleAutoSubmit() {
   if (input.disabled) return;
+  // check "already typed" hint first — if it applies, skip scheduling auto-submit
+  const raw = input.value;
+  const hinted = showAlreadyTypedHintIfApplicable(raw);
+  if (hinted) {
+    if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+    return;
+  }
+
   if (autoTimer) clearTimeout(autoTimer);
   autoTimer = setTimeout(() => {
     autoTimer = null;
@@ -256,7 +299,6 @@ function handleSubmit() {
       }
       if (converted) { save(); renderWordList(); }
       showMessage(`You already revealed Nidoran — showing it now.`, { positive: false });
-      // CLEAR and give "already" feedback (choose first matching idx if available)
       acceptAndClearAlready(matching[0] || 0);
       return;
     }
@@ -337,7 +379,7 @@ async function initApp() {
     wordsData = await res.json();
   } catch (e) {
     console.error("Failed to load words.json:", e);
-    // fallback: small built-in list so app doesn't break (optional)
+    // fallback minimal data so UI doesn't entirely break
     wordsData = [{ word: "Pidgeot", secret: "Fallback entry." }];
   }
 
