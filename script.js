@@ -408,7 +408,7 @@ function handleGiveUp() {
 // --- List loading & switching (new) ---
 // mapping listId -> filename
 const listFiles = {
-  gen1: "words.json",
+  gen1: "words-gen1.json",
   gen2: "words-gen2.json"
 };
 
