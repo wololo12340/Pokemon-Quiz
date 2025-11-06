@@ -1,23 +1,8 @@
-<<<<<<< HEAD
 // script.js - supports switching between Gen 1 and Gen 2 lists (Gen 1 default).
 // Minimal changes: script injects a list selector into the page and loads words.json
 // (Gen 1) or words-gen2.json (Gen 2). Progress is kept per-list in localStorage
 // using separate storage keys so switching preserves each list's progress.
 // No HTML edits required (script will insert the selector). CSS file is reused.
-=======
-// script.js - expects words.json (same directory) and loads it at startup.
-//
-// Behavior change per request:
-// - Immediate auto-submit: when your normalized input exactly matches a stored name,
-//   the script will submit immediately (no debounce) *unless* every matching entry
-//   for that normalized name was already entered by you earlier (userRevealed).
-// - If every matching entry was already entered, the app shows a hint message
-//   ("You already entered 'Pidgeot'. Press Enter to view it.") and does NOT auto-submit.
-// - Accepted guesses (new reveal / already-revealed acceptance / nidoran multi-reveal)
-//   clear the input and provide visual feedback (green for new, yellow for already).
-// - Manual Enter still works as before.
-// Note: fetch("words.json") requires serving via HTTP (file:// will often be blocked).
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
 
 let wordsData = []; // populated by loadList()
 const STORAGE_KEY_BASE = "revealedWords_v1"; // actual key: STORAGE_KEY_BASE + "_" + listId
@@ -40,11 +25,6 @@ let revealed = [];
 let userRevealed = new Set();
 let currentIndex = -1;
 let normalizedIndexMap = {};
-<<<<<<< HEAD
-=======
-
-// Flags for auto-submit in progress to avoid reentrancy
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
 let isAutoSubmitting = false;
 
 // --- small helper to insert list selector UI (minimal DOM changes) ---
@@ -114,7 +94,6 @@ function buildNormalizedIndexMap() {
   normalizedIndexMap = map;
 }
 
-<<<<<<< HEAD
 // --- persistence per list ---
 function storageKeyForList(listId) {
   return `${STORAGE_KEY_BASE}_${listId}`;
@@ -172,15 +151,6 @@ function saveProgressForCurrentList() {
 }
 
 // --- render helpers (unchanged) ---
-=======
-// Save/load
-function save() {
-  const toStore = { all: revealed, user: Array.from(userRevealed) };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
-}
-
-// --- Rendering ---
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
 function renderWordList() {
   wordsUL.innerHTML = "";
   wordsData.forEach((item, idx) => {
@@ -246,75 +216,20 @@ function flashElement(el, color, duration = 220) {
     setTimeout(() => { el.style.transition = ""; }, 250);
   }, duration);
 }
-<<<<<<< HEAD
 function acceptAndClearNew() {
   input.value = "";
   try { input.focus(); } catch (e) {}
   flashElement(input, "#e6ffef");
-=======
-
-// Accept + clear helpers (clear input immediately then flash)
-function acceptAndClearNew() {
-  input.value = "";
-  try { input.focus(); } catch (e) {}
-  flashElement(input, "#e6ffef"); // light green
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
 }
 function acceptAndClearAlready(idx) {
   input.value = "";
   try { input.focus(); } catch (e) {}
-<<<<<<< HEAD
   flashElement(input, "#fff7df");
-=======
-  flashElement(input, "#fff7df"); // light yellow
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
   const li = wordsUL.querySelector(`li[data-idx="${idx}"]`);
   if (li) flashElement(li, "#fff7df");
 }
 
-<<<<<<< HEAD
 // --- matching & submit logic (kept behavior) ---
-=======
-// Celebration
-function createOverlayContainer() {
-  const overlay = document.createElement("div");
-  overlay.className = "celebration-overlay";
-  overlay.style.pointerEvents = "none";
-  document.body.appendChild(overlay);
-  return overlay;
-}
-function triggerCelebration() {
-  const overlay = createOverlayContainer();
-  const banner = document.createElement("div");
-  banner.className = "celebration-banner";
-  banner.textContent = "Congratulations — all found!";
-  document.body.appendChild(banner);
-
-  const colors = ["#FF5A5F","#FFB400","#00A699","#7B61FF","#FF6B6B","#00D1B2","#FFD166"];
-  const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-  const pieces = 120;
-  for (let i = 0; i < pieces; i++) {
-    const el = document.createElement("div");
-    el.className = "confetti";
-    const left = Math.random() * vw;
-    const size = 8 + Math.random() * 14;
-    el.style.left = `${left}px`;
-    el.style.top = `${-20 - Math.random() * 40}px`;
-    el.style.width = `${size}px`;
-    el.style.height = `${Math.round(size * 1.4)}px`;
-    el.style.background = colors[Math.floor(Math.random() * colors.length)];
-    const duration = 3000 + Math.random() * 3000;
-    const delay = Math.random() * 500;
-    el.style.animationDuration = `${duration}ms`;
-    el.style.animationDelay = `${delay}ms`;
-    el.style.transform = `rotate(${Math.floor(Math.random()*360)}deg)`;
-    overlay.appendChild(el);
-  }
-  setTimeout(() => { overlay.remove(); banner.remove(); }, 6500);
-}
-
-// Matching logic
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
 function findIndexByInput(rawInput) {
   const normalizedInput = normalizeText(rawInput);
   if (!normalizedInput) return null;
@@ -326,75 +241,6 @@ function findIndexByInput(rawInput) {
   return { idx: matching[0], item: wordsData[matching[0]], alreadyRevealed: true };
 }
 
-<<<<<<< HEAD
-=======
-// Show hint if user has already entered all matches for this normalized input
-function showAlreadyTypedHintIfApplicable(raw) {
-  const normalized = normalizeText(raw);
-  if (!normalized) {
-    if (messageEl.dataset.hint === "already-typed") {
-      showMessage("", {}); delete messageEl.dataset.hint;
-    }
-    return false;
-  }
-
-  const matching = normalizedIndexMap[normalized];
-  if (!matching || matching.length === 0) {
-    if (messageEl.dataset.hint === "already-typed") {
-      showMessage("", {}); delete messageEl.dataset.hint;
-    }
-    return false;
-  }
-
-  const allTyped = matching.every(idx => userRevealed.has(idx));
-  if (allTyped) {
-    const display = wordsData[matching[0]].word;
-    showMessage(`You already entered "${display}". Press Enter to view it.`, { positive: false });
-    messageEl.dataset.hint = "already-typed";
-    return true;
-  } else {
-    if (messageEl.dataset.hint === "already-typed") {
-      showMessage("", {}); delete messageEl.dataset.hint;
-    }
-    return false;
-  }
-}
-
-// Immediate auto-submit on input (no debounce) except when showAlreadyTypedHint applies
-function onInputImmediate() {
-  if (input.disabled) return;
-  const raw = input.value;
-  // If hint applies (already entered everything), show hint and DO NOT auto-submit
-  const hinted = showAlreadyTypedHintIfApplicable(raw);
-  if (hinted) return;
-
-  // Otherwise check if normalized input exactly matches a stored name
-  const normalized = normalizeText(raw);
-  if (!normalized) return;
-  if (!normalizedIndexMap.hasOwnProperty(normalized)) return;
-
-  // If at least one matching index is NOT in userRevealed, auto-submit immediately.
-  const matching = normalizedIndexMap[normalized];
-  const hasUnenteredMatch = matching.some(idx => !userRevealed.has(idx));
-  if (!hasUnenteredMatch) {
-    // This case should have been caught by hint logic, but be defensive: show hint and skip
-    showAlreadyTypedHintIfApplicable(raw);
-    return;
-  }
-
-  // Prevent re-entrancy
-  if (isAutoSubmitting) return;
-  isAutoSubmitting = true;
-  // small microtask delay so input handler finishes (helps some browsers)
-  setTimeout(() => {
-    handleSubmit();
-    // quick cooldown
-    setTimeout(() => { isAutoSubmitting = false; }, 120);
-  }, 0);
-}
-
-// --- Submit handler ---
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
 function showMessage(text, opts = {}) {
   messageEl.textContent = text;
   if (opts.positive) messageEl.style.color = "var(--success)";
@@ -402,7 +248,6 @@ function showMessage(text, opts = {}) {
   else messageEl.style.color = "var(--muted)";
 }
 
-<<<<<<< HEAD
 // When user types a normalized name that they have already entered for this list,
 // show a hint and DO NOT auto-submit.
 function showAlreadyTypedHintIfApplicable(raw) {
@@ -469,17 +314,6 @@ function handleSubmit() {
     return;
   }
   const normalized = normalizeText(raw);
-=======
-function handleSubmit() {
-  // Cancel any pending hint/auto behavior is handled in onInputImmediate
-  const raw = input.value.trim();
-  if (!raw) {
-    showMessage("Please type a word to guess.", { positive: false });
-    return;
-  }
-
-  const normalized = normalizeText(raw);
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
   if (!normalized) {
     showMessage("Please type a valid word.", { positive: false });
     return;
@@ -515,13 +349,8 @@ function handleSubmit() {
   const res = findIndexByInput(raw);
   if (!res) {
     showMessage(`"${raw}" is not a secret word (or it's misspelled).`, { positive: false });
-<<<<<<< HEAD
     // don't change selection behavior for immediate auto-submits (they clear input on success).
     input.select();
-=======
-    // manual selection only if this was not auto-submitting
-    if (!isAutoSubmitting) input.select();
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
     return;
   }
 
@@ -579,7 +408,7 @@ function handleGiveUp() {
 // --- List loading & switching (new) ---
 // mapping listId -> filename
 const listFiles = {
-  gen1: "words-gen1.json",
+  gen1: "words.json",
   gen2: "words-gen2.json"
 };
 
@@ -624,24 +453,14 @@ async function initApp() {
       const prevAuto = isAutoSubmitting; isAutoSubmitting = false; handleSubmit(); isAutoSubmitting = prevAuto;
     }
   });
-<<<<<<< HEAD
   // immediate input handling (auto-submit or hint)
   input.addEventListener("input", onInputImmediate);
 
-=======
-  // immediate auto-submit on each input change (subject to already-typed hint)
-  input.addEventListener("input", onInputImmediate);
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
   resetBtn.addEventListener("click", handleReset);
   giveUpBtn.addEventListener("click", handleGiveUp);
   prevBtn.addEventListener("click", handlePrev);
   nextBtn.addEventListener("click", handleNext);
 }
 
-<<<<<<< HEAD
 // start the app
 initApp();
-=======
-// start
-initApp();
->>>>>>> a0de702f99bfc3e5fdbfb6ac332abae19568f528
