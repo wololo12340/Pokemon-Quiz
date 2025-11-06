@@ -1,9 +1,15 @@
 // script.js - expects words.json (same directory) and loads it at startup.
-// Updated: when you type a name that you've already entered previously, the UI
-// now shows a helpful inline hint ("You already entered 'Pidgeot' — press Enter to view it.")
-// and will NOT auto-submit. All prior behaviors are preserved (debounced auto-submit,
-// skip auto-submit when only previously-entered matches exist, input clearing on accept,
-// distinct feedback for new vs already-revealed, nidoran multi-reveal, confetti).
+//
+// Behavior change per request:
+// - Immediate auto-submit: when your normalized input exactly matches a stored name,
+//   the script will submit immediately (no debounce) *unless* every matching entry
+//   for that normalized name was already entered by you earlier (userRevealed).
+// - If every matching entry was already entered, the app shows a hint message
+//   ("You already entered 'Pidgeot'. Press Enter to view it.") and does NOT auto-submit.
+// - Accepted guesses (new reveal / already-revealed acceptance / nidoran multi-reveal)
+//   clear the input and provide visual feedback (green for new, yellow for already).
+// - Manual Enter still works as before.
+// Note: fetch("words.json") requires serving via HTTP (file:// will often be blocked).
 
 let wordsData = []; // populated from words.json at init
 const STORAGE_KEY = "revealedWords_v1";
@@ -34,9 +40,7 @@ let currentIndex = -1;
 // Index map built after wordsData is loaded
 let normalizedIndexMap = {};
 
-// Auto-submit debounce
-const AUTO_DEBOUNCE_MS = 200;
-let autoTimer = null;
+// Flags for auto-submit in progress to avoid reentrancy
 let isAutoSubmitting = false;
 
 // --- Utility functions ---
@@ -57,13 +61,13 @@ function buildNormalizedIndexMap() {
   normalizedIndexMap = map;
 }
 
-// Save state
+// Save/load
 function save() {
   const toStore = { all: revealed, user: Array.from(userRevealed) };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
 }
 
-// Render functions
+// --- Rendering ---
 function renderWordList() {
   wordsUL.innerHTML = "";
   wordsData.forEach((item, idx) => {
@@ -126,22 +130,22 @@ function flashElement(el, color, duration = 220) {
   }, duration);
 }
 
-// Accept + clear helpers
+// Accept + clear helpers (clear input immediately then flash)
 function acceptAndClearNew() {
   input.value = "";
-  try { input.focus(); } catch(e){}
-  flashElement(input, "#e6ffef");
+  try { input.focus(); } catch (e) {}
+  flashElement(input, "#e6ffef"); // light green
 }
 
 function acceptAndClearAlready(idx) {
   input.value = "";
-  try { input.focus(); } catch(e){}
-  flashElement(input, "#fff7df");
+  try { input.focus(); } catch (e) {}
+  flashElement(input, "#fff7df"); // light yellow
   const li = wordsUL.querySelector(`li[data-idx="${idx}"]`);
   if (li) flashElement(li, "#fff7df");
 }
 
-// Celebration / confetti
+// Celebration
 function createOverlayContainer() {
   const overlay = document.createElement("div");
   overlay.className = "celebration-overlay";
@@ -191,16 +195,12 @@ function findIndexByInput(rawInput) {
   return { idx: matching[0], item: wordsData[matching[0]], alreadyRevealed: true };
 }
 
-// --- NEW: show hint when user types a name they've already entered ---
-// Returns true if a "already typed" hint was shown (so callers can avoid auto-submit).
+// Show hint if user has already entered all matches for this normalized input
 function showAlreadyTypedHintIfApplicable(raw) {
   const normalized = normalizeText(raw);
   if (!normalized) {
-    // clear hint if input empty
-    // Don't overwrite other messages (we only clear hint if message matches our hint pattern)
     if (messageEl.dataset.hint === "already-typed") {
-      showMessage("", {}); // clear
-      delete messageEl.dataset.hint;
+      showMessage("", {}); delete messageEl.dataset.hint;
     }
     return false;
   }
@@ -213,17 +213,13 @@ function showAlreadyTypedHintIfApplicable(raw) {
     return false;
   }
 
-  // If every matching index is in userRevealed, show a hint and do NOT auto-submit.
   const allTyped = matching.every(idx => userRevealed.has(idx));
   if (allTyped) {
-    // use the display name from first matching entry (they are identical after normalization)
     const display = wordsData[matching[0]].word;
     showMessage(`You already entered "${display}". Press Enter to view it.`, { positive: false });
-    // mark dataset so we can clear later without messing other messages
     messageEl.dataset.hint = "already-typed";
     return true;
   } else {
-    // there is at least one unentered match; clear prior hint if present
     if (messageEl.dataset.hint === "already-typed") {
       showMessage("", {}); delete messageEl.dataset.hint;
     }
@@ -231,44 +227,40 @@ function showAlreadyTypedHintIfApplicable(raw) {
   }
 }
 
-// Auto-submit scheduling
-function scheduleAutoSubmit() {
+// Immediate auto-submit on input (no debounce) except when showAlreadyTypedHint applies
+function onInputImmediate() {
   if (input.disabled) return;
-  // check "already typed" hint first — if it applies, skip scheduling auto-submit
   const raw = input.value;
+  // If hint applies (already entered everything), show hint and DO NOT auto-submit
   const hinted = showAlreadyTypedHintIfApplicable(raw);
-  if (hinted) {
-    if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+  if (hinted) return;
+
+  // Otherwise check if normalized input exactly matches a stored name
+  const normalized = normalizeText(raw);
+  if (!normalized) return;
+  if (!normalizedIndexMap.hasOwnProperty(normalized)) return;
+
+  // If at least one matching index is NOT in userRevealed, auto-submit immediately.
+  const matching = normalizedIndexMap[normalized];
+  const hasUnenteredMatch = matching.some(idx => !userRevealed.has(idx));
+  if (!hasUnenteredMatch) {
+    // This case should have been caught by hint logic, but be defensive: show hint and skip
+    showAlreadyTypedHintIfApplicable(raw);
     return;
   }
 
-  if (autoTimer) clearTimeout(autoTimer);
-  autoTimer = setTimeout(() => {
-    autoTimer = null;
-    attemptAutoSubmit();
-  }, AUTO_DEBOUNCE_MS);
-}
-
-function attemptAutoSubmit() {
-  const raw = input.value;
-  if (!raw || !raw.trim()) return;
-  const normalized = normalizeText(raw);
-  if (!normalized) return;
-  const matching = normalizedIndexMap[normalized];
-  if (!matching || matching.length === 0) return;
-
-  // Skip auto-submit if the user has already entered (userRevealed) every matching index.
-  const hasUnenteredMatch = matching.some(idx => !userRevealed.has(idx));
-  if (!hasUnenteredMatch) return;
-
+  // Prevent re-entrancy
+  if (isAutoSubmitting) return;
   isAutoSubmitting = true;
+  // small microtask delay so input handler finishes (helps some browsers)
   setTimeout(() => {
     handleSubmit();
+    // quick cooldown
     setTimeout(() => { isAutoSubmitting = false; }, 120);
-  }, 8);
+  }, 0);
 }
 
-// Main submit handler
+// --- Submit handler ---
 function showMessage(text, opts = {}) {
   messageEl.textContent = text;
   if (opts.positive) messageEl.style.color = "var(--success)";
@@ -277,13 +269,18 @@ function showMessage(text, opts = {}) {
 }
 
 function handleSubmit() {
-  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
-
+  // Cancel any pending hint/auto behavior is handled in onInputImmediate
   const raw = input.value.trim();
-  if (!raw) { showMessage("Please type a word to guess.", { positive: false }); return; }
+  if (!raw) {
+    showMessage("Please type a word to guess.", { positive: false });
+    return;
+  }
 
   const normalized = normalizeText(raw);
-  if (!normalized) { showMessage("Please type a valid word.", { positive: false }); return; }
+  if (!normalized) {
+    showMessage("Please type a valid word.", { positive: false });
+    return;
+  }
 
   // Special-case nidoran: reveal all matches
   if (normalized === "nidoran") {
@@ -316,6 +313,7 @@ function handleSubmit() {
   const res = findIndexByInput(raw);
   if (!res) {
     showMessage(`"${raw}" is not a secret word (or it's misspelled).`, { positive: false });
+    // manual selection only if this was not auto-submitting
     if (!isAutoSubmitting) input.select();
     return;
   }
@@ -408,7 +406,8 @@ async function initApp() {
       const prevAuto = isAutoSubmitting; isAutoSubmitting = false; handleSubmit(); isAutoSubmitting = prevAuto;
     }
   });
-  input.addEventListener("input", scheduleAutoSubmit);
+  // immediate auto-submit on each input change (subject to already-typed hint)
+  input.addEventListener("input", onInputImmediate);
   resetBtn.addEventListener("click", handleReset);
   giveUpBtn.addEventListener("click", handleGiveUp);
   prevBtn.addEventListener("click", handlePrev);
