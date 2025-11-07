@@ -3,54 +3,60 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Pokemon Test (Hidden List)</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>Pokémon Reveal — Gen 1 &amp; 2</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="wrap">
+  <div class="wrap" role="application" aria-labelledby="appTitle">
     <header>
-      <h1>Type-a-Pokemon — Guess to Reveal</h1>
-      <p>Type a Pokémon name into the box. If it's one of the Gen 1 Pokémon, its secret will be shown.</p>
+      <h1 id="appTitle">Pokémon Reveal</h1>
+      <p>Type a Pokémon name to reveal it. Switch lists to view Gen 1 or Gen 2.</p>
     </header>
 
-    <section class="game">
-      <aside clas\s="word-list" aria-label="Hidden words to find">
-        <h2>Pokemon to find</h2>
-        <ul id="wordsUL" class="words" aria-hidden="true"></ul>
-        <div class="progress" id="progress"></div>
+    <div class="game">
+      <!-- Left: list -->
+      <aside class="word-list" aria-labelledby="listHeading">
+        <h2 id="listHeading" class="visually-hidden">All targets</h2>
+        <div class="progress" id="progress">0 / 0 found</div>
+        <ul id="wordsUL" class="words" aria-live="polite" aria-relevant="additions"></ul>
       </aside>
 
-      <div class="play-area">
-        <label for="wordInput" class="visually-hidden">Enter a guessed word</label>
-        <input id="wordInput" type="text" placeholder="Type a guess and press Enter" aria-label="Word input" autocomplete="off" />
-        <div class="buttons">
-          <button id="submitBtn" class="primary">Submit</button>
-          <button id="resetBtn" class="secondary" aria-label="Reset progress">Reset Progress</button>
-          <button id="giveUpBtn" class="danger" aria-label="Give up and reveal all">Give Up</button>
+      <!-- Right: play area -->
+      <section class="play-area" aria-labelledby="playHeading">
+        <h2 id="playHeading" class="visually-hidden">Play area</h2>
+
+        <!-- Controls (list selector & theme toggle are injected by script if not present) -->
+        <div id="controls" class="controls" role="region" aria-label="controls">
+          <input id="wordInput" name="word" type="text" placeholder="Type a Pokémon name..." autocomplete="off" aria-label="Guess Pokémon name" />
+          <button id="submitBtn" class="primary" type="button">Enter</button>
+          <button id="resetBtn" class="secondary" type="button">Reset</button>
+          <button id="giveUpBtn" class="danger" type="button">Give Up</button>
         </div>
 
-        <div id="message" role="status" aria-live="polite" class="message"></div>
+        <div class="message" id="message" aria-live="polite"></div>
 
-        <section class="revealed" aria-label="Revealed secrets">
+        <div class="revealed" aria-live="polite">
           <div class="revealed-header">
-            <h2>Revealed</h2>
             <div class="reveal-controls">
-              <button id="prevBtn" class="nav" aria-label="Show previous revealed word" title="Previous" disabled>◀</button>
-              <span id="navInfo" class="nav-info" aria-live="polite"></span>
-              <button id="nextBtn" class="nav" aria-label="Show next revealed word" title="Next" disabled>▶</button>
+              <button id="prevBtn" class="nav" type="button" aria-label="Previous" disabled>Prev</button>
+              <span id="navInfo" class="nav-info" aria-hidden="true"></span>
+              <button id="nextBtn" class="nav" type="button" aria-label="Next" disabled>Next</button>
             </div>
+            <div class="progress" id="revealProgress" aria-hidden="true"></div>
           </div>
-          <div id="revealedList" class="revealed-list"></div>
-        </section>
-      </div>
-    </section>
 
-    <footer>
-      <small>Progress is saved locally. The actual list is hidden from players; edit words.json if you want to customize Pokémon.</small>
-    </footer>
-  </main>
+          <div id="revealedList" class="revealed-list">
+            <!-- Revealed card(s) rendered here -->
+            Nothing revealed yet — try guessing a secret word.
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
 
-  <!-- celebration overlay will be created by script when needed -->
-  <script src="script.js"></script>
+  <!-- Main script (loads lists, handles UI, injects list selector + theme toggle) -->
+  <script src="script.js" defer></script>
+  <!-- Improved confetti (optional, provides window.triggerCelebration) -->
+  <script src="confetti.js" defer></script>
 </body>
 </html>
