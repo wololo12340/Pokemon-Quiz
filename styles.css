@@ -9,19 +9,47 @@
   --givenup-accent:#c2410c; /* accent color for given-up text */
   --radius:10px;
   --maxw:960px;
+  --text:#0f172a;
+  --card-contrast: rgba(11,20,40,0.03);
   font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
+/* ------ Dark theme (clean, muted, consistent) ------ */
+/* Apply when the root element has data-theme="dark" (script sets this on <html>) */
+html[data-theme="dark"] {
+  --bg: #071023;                /* deep navy background */
+  --card: #0a1220;              /* card background */
+  --accent: #4ea3ff;            /* slightly brighter accent for visibility */
+  --success: #26d07a;           /* green for found items */
+  --muted: #9aa6b2;             /* softer text color */
+  --danger: #ff6b6b;
+  --givenup: rgba(255,180,110,0.04);
+  --givenup-accent: #ffb37a;
+  --radius:10px;
+  --text: #e6eef6;             /* primary text in dark */
+  --card-contrast: rgba(255,255,255,0.03);
+}
+
+/* Smooth color transitions when toggling theme */
+*,
+*::before,
+*::after {
+  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+/* ---------- Layout base ---------- */
 *{box-sizing:border-box}
 body{
   margin:0;
-  background:linear-gradient(180deg,var(--bg),#eef3fb);
-  color:#0f172a;
+  background:linear-gradient(180deg,var(--bg), rgba(0,0,0,0.06));
+  color:var(--text);
   display:flex;
   align-items:center;
   justify-content:center;
   min-height:100vh;
   padding:24px;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
 
 .wrap{
@@ -29,323 +57,240 @@ body{
   max-width:var(--maxw);
   background:var(--card);
   border-radius:var(--radius);
-  box-shadow:0 6px 28px rgba(11,20,40,0.08);
+  box-shadow:0 6px 28px rgba(2,6,23,0.12);
   padding:20px;
 }
 
-header h1{margin:0 0 6px 0;font-size:1.25rem}
+/* Header */
+header h1{margin:0 0 6px 0;font-size:1.25rem;color:var(--text)}
 header p{margin:0 0 14px 0;color:var(--muted)}
 
+/* Layout */
 .game{
   display:flex;
   gap:18px;
   align-items:flex-start;
 }
 
+/* ---------- Word list ---------- */
 .word-list{
   width:260px;
-  background:linear-gradient(180deg,#ffffff,#fbfdff);
+  background:linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, transparent), var(--card));
   border-radius:8px;
   padding:12px;
-  border:1px solid #eef2ff;
+  border:1px solid var(--card-contrast);
+  box-shadow: 0 2px 8px rgba(2,6,23,0.04);
 }
 
 .words{list-style:none;padding:0;margin:8px 0 0 0;max-height:360px;overflow:auto}
+
+/* Grid layout: text column + fixed sprite column so size is consistent */
 .words li{
   padding:8px 10px;
   margin-bottom:6px;
   border-radius:6px;
-  background:linear-gradient(180deg,#fafcff,#ffffff);
-  display:flex;
-  justify-content:space-between;
+  display:grid;
+  grid-template-columns: 1fr 48px;
   align-items:center;
-  border:1px solid #eef3ff;
+  column-gap:10px;
+  border:1px solid var(--card-contrast);
   font-weight:600;
   color:var(--muted);
+  min-height:52px;
+  box-sizing:border-box;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--card) 96%, transparent), var(--card));
 }
+
+/* State: hidden / found / given-up */
 .words li.hidden{
-  background:linear-gradient(180deg,#f8fafc,#ffffff);
   color:var(--muted);
   font-weight:700;
   letter-spacing:1px;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--card) 98%, white), var(--card));
 }
 .words li.found{
-  background:linear-gradient(180deg,#eafff0,#f4fff6);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--success) 6%, var(--card)), color-mix(in srgb, var(--card) 96%, transparent));
   color:var(--success);
-  border-color:#d7f3e1;
+  border-color: color-mix(in srgb, var(--success) 16%, var(--card));
   text-decoration:line-through;
-  opacity:0.95;
+  opacity:0.98;
 }
-/* Highlight items revealed because of "Give Up" differently */
 .words li.given-up{
-  background: linear-gradient(180deg, var(--givenup), #fff7ed);
+  background: linear-gradient(180deg, var(--givenup), color-mix(in srgb, var(--card) 96%, transparent));
   color: var(--givenup-accent);
-  border-color: rgba(194,65,12,0.12);
+  border-color: color-mix(in srgb, var(--givenup-accent) 8%, var(--card));
   font-weight:700;
   text-decoration:none;
 }
 
-.progress{margin-top:10px;color:var(--muted);font-size:0.9rem}
-
+/* ---------- Play area ---------- */
 .play-area{
   flex:1;
   padding:14px;
   border-radius:8px;
-  background:linear-gradient(180deg,#ffffff,#fbfdff);
-  border:1px solid #eef2ff;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--card) 96%, transparent), var(--card));
+  border:1px solid var(--card-contrast);
+  min-height:260px;
 }
 
+/* Input */
 #wordInput{
   width:100%;
   padding:12px;
   font-size:1rem;
   border-radius:8px;
-  border:1px solid #dbeafe;
+  border:1px solid color-mix(in srgb, var(--accent) 12%, var(--card));
   outline:none;
+  background: color-mix(in srgb, var(--card) 98%, transparent);
+  color:var(--text);
 }
-#wordInput:focus{box-shadow:0 0 0 4px rgba(43,124,255,0.08);}
+#wordInput:focus{box-shadow:0 0 0 6px color-mix(in srgb, var(--accent) 8%, transparent); border-color:var(--accent);}
 
-.buttons{
-  margin-top:10px;
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
+/* Buttons */
+.buttons{margin-top:10px;display:flex;gap:8px;align-items:center}
+.primary{padding:10px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600}
+.primary:hover{filter:brightness(0.97)}
+.secondary{padding:10px 14px;background:transparent;color:var(--muted);border:1px solid color-mix(in srgb, var(--card) 92%, transparent);border-radius:8px;cursor:pointer;font-weight:600}
+.secondary:hover{background: color-mix(in srgb, var(--card) 96%, white)}
+.danger{padding:10px 14px;background:transparent;color:var(--danger);border:1px solid color-mix(in srgb, var(--danger) 12%, transparent);border-radius:8px;cursor:pointer;font-weight:600}
+.danger:hover{background: color-mix(in srgb, var(--danger) 6%, transparent)}
 
-.primary{
-  padding:10px 14px;
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
-}
-.primary:hover{filter:brightness(0.98)}
-
-.secondary{
-  padding:10px 14px;
-  background:transparent;
-  color:var(--muted);
-  border:1px solid #e6eefc;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
-}
-.secondary:hover{
-  background:#fbfbff;
-}
-
-.danger{
-  padding:10px 14px;
-  background:transparent;
-  color:var(--danger);
-  border:1px solid rgba(239,68,68,0.12);
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
-}
-.danger:hover{
-  background:rgba(239,68,68,0.04);
-}
-
+/* Message area */
 .message{margin-top:12px;color:var(--muted);min-height:1.4em}
 
+/* Revealed cards */
 .revealed{margin-top:18px}
-.revealed-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-}
-.reveal-controls{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.nav{
-  background:transparent;
-  border:1px solid #e6eefc;
-  padding:6px 8px;
-  border-radius:6px;
-  cursor:pointer;
-  font-size:1rem;
-}
-.nav[disabled]{
-  opacity:0.4;
-  cursor:default;
-}
-.nav-info{
-  min-width:120px;
-  text-align:center;
-  color:var(--muted);
-  font-size:0.9rem;
-}
+.revealed-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.reveal-controls{display:flex;align-items:center;gap:8px}
+.nav{background:transparent;border:1px solid var(--card-contrast);padding:6px 8px;border-radius:6px;cursor:pointer;font-size:1rem}
+.nav[disabled]{opacity:0.4;cursor:default}
+.nav-info{min-width:120px;text-align:center;color:var(--muted);font-size:0.9rem}
 
-/* card for a revealed entry */
+/* Cards */
 .revealed-list{display:grid;gap:10px;margin-top:12px}
-.card{
-  padding:12px;
-  border-radius:8px;
-  background:linear-gradient(180deg,#ffffff,#fbfdff);
-  border:1px solid #eef3ff;
-  box-shadow:0 4px 14px rgba(11,20,40,0.03);
-}
-.card h3{margin:0 0 6px 0;font-size:1rem}
+.card{padding:12px;border-radius:8px;background:linear-gradient(180deg,color-mix(in srgb, var(--card) 96%, transparent),var(--card));border:1px solid var(--card-contrast);box-shadow:0 4px 14px rgba(2,6,23,0.04)}
+.card h3{margin:0 0 6px 0;font-size:1rem;color:var(--text)}
 .card p{margin:0;color:var(--muted)}
+.card.given-up{background: linear-gradient(180deg, var(--givenup), color-mix(in srgb, var(--card) 96%, transparent));border-color: color-mix(in srgb, var(--givenup-accent) 8%, var(--card));}
+.card.given-up h3{color:var(--givenup-accent)}
 
-/* highlight cards that were revealed because of give-up */
-.card.given-up{
-  background: linear-gradient(180deg, #fff7ed, #fff6f0);
-  border-color: rgba(194,65,12,0.12);
-}
-.card.given-up h3{
-  color: var(--givenup-accent);
-}
-
-/* Celebration overlay and confetti styles */
-.celebration-overlay{
-  position:fixed;
-  left:0;
-  top:0;
-  right:0;
-  bottom:0;
-  pointer-events:none;
-  z-index:9999;
+/* ---------- Sprites (right column) ---------- */
+.words li .word-name{
+  display:block;
+  min-width:0;
   overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  padding-right:8px;
 }
 
-.celebration-banner{
-  position:fixed;
-  left:50%;
-  top:12vh;
-  transform:translateX(-50%) translateY(-20px);
-  background:linear-gradient(90deg,#ffefba,#ffd1dc);
-  color:#111827;
-  padding:14px 22px;
-  border-radius:12px;
-  box-shadow:0 10px 30px rgba(11,20,40,0.12);
-  font-weight:700;
-  font-size:1.15rem;
-  opacity:0;
-  animation:bannerIn 700ms ease-out forwards;
-  z-index:10000;
-}
-@keyframes bannerIn{
-  from{opacity:0; transform:translateX(-50%) translateY(-40px) scale(0.98)}
-  to{opacity:1; transform:translateX(-50%) translateY(0) scale(1)}
+/* sprite image */
+.sprite{
+  width:25px;
+  height:25px;
+  display:block;
+  object-fit:contain;
+  border-radius:8px;
+  padding:4px;
+  background:transparent;
+  border:1px solid rgba(11,20,40,0.04);
+  box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  line-height:0;
 }
 
-/* confetti pieces */
-.confetti{
-  position:absolute;
-  width:10px;
-  height:16px;
-  opacity:0.95;
-  transform-origin:center;
-  will-change:transform, top, left, opacity;
-  animation:fall linear forwards;
-  border-radius:2px;
-}
-@keyframes fall{
-  from{transform:translateY(-10vh) rotate(0deg); opacity:1}
-  to{transform:translateY(110vh) rotate(720deg); opacity:0.9}
+/* placeholder keeps grid consistent if sprite hidden */
+.sprite-placeholder{
+  width:48px;
+  height:25px;
+  display:block;
 }
 
-/* small sparkle behind banner */
-.sparkle {
-  width:12px;
-  height:12px;
-  border-radius:50%;
-  background:linear-gradient(90deg,#fff,#ffd6d6);
-  box-shadow:0 0 18px rgba(255,200,200,0.6);
-  position:absolute;
-  left:-18px;
-  top:50%;
-  transform:translateY(-50%);
-  opacity:0;
-  animation:spark 900ms ease-out 200ms forwards;
-}
-@keyframes spark{
-  from{opacity:0; transform: translateY(-50%) scale(0.2)}
-  to{opacity:1; transform: translateY(-50%) scale(1)}
+/* hover effect */
+.words li:hover .sprite{ transform:translateY(-2px) scale(1.03); box-shadow: 0 10px 22px rgba(2,6,23,0.10); }
+
+/* hide broken images */
+.sprite[style*="display: none"]{ display:none !important; }
+
+/* Responsive */
+@media (max-width:520px){
+  .sprite{ width:32px; height:32px; }
+  .word-list{ width:220px; }
 }
 
-.visually-hidden{
-  position:absolute!important;
-  height:1px;width:1px;overflow:hidden;
-  clip:rect(1px,1px,1px,1px);white-space:nowrap;
-}
+/* ---------- Segmented list switcher (improved) ---------- */
+/* container already provided by script as .list-switcher */
 
 .list-switcher {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   margin-bottom: 0.6rem;
   padding: 6px;
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
-  box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 4px 12px rgba(0,0,0,0.06);
-  font-family: inherit;
-  user-select: none;
+  border-radius: 12px;
+  background: transparent;
+  align-items:center;
 }
 
-/* Label next to the selector */
-.list-switcher label {
-  font-size: 0.88rem;
-  color: var(--muted, #6b7280);
-  margin-left: 4px;
+/* segmented control container */
+.list-switcher .segmented {
+  display: inline-flex;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px;
+  background: transparent;
+  border: 1px solid var(--card-contrast);
 }
 
-/* The native <select> styled to look like a pill button */
-#listSelect {
-  -webkit-appearance: none;
-  -moz-appearance: none;
+/* the pill buttons */
+.list-switcher .list-btn {
   appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--muted);
+  transition: background-color 160ms ease, color 160ms ease, transform 120ms ease, box-shadow 160ms ease;
+  outline: none;
+  box-shadow: none;
+  border: 1px solid transparent;
+  font-size: 0.95rem;
+}
+
+/* inactive hover */
+.list-switcher .list-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(2,6,23,0.04);
+  color: var(--text);
+}
+
+/* active pill */
+.list-switcher .list-btn.active {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 14%, var(--card)), color-mix(in srgb, var(--accent) 8%, var(--card)));
+  color: #b0b0b0;
+  box-shadow: 0 6px 18px rgba(70, 70, 70, 0.12);
+  transform: translateY(0);
+}
+
+/* focus styles for accessibility */
+.list-switcher .list-btn:focus {
+  box-shadow: 0 8px 26px rgba(43,124,255,0.12);
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--card));
+}
+
+/* theme toggle button styling (small) */
+#themeToggleBtn.secondary {
   padding: 6px 10px;
   font-size: 0.95rem;
   border-radius: 8px;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: linear-gradient(180deg, #ffffff, #fafafa);
-  cursor: pointer;
-  color: var(--text-color, #111827);
-  transition: box-shadow 120ms ease, transform 120ms ease, border-color 120ms ease;
-  box-shadow: 0 1px 2px rgba(16,24,40,0.04);
-}
-
-/* Add subtle focus/hover states */
-#listSelect:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(16,24,40,0.06);
-}
-
-#listSelect:focus {
-  outline: none;
-  border-color: rgba(59,130,246,0.9); /* blue-ish focus */
-  box-shadow: 0 6px 18px rgba(59,130,246,0.12);
-}
-
-/* Small chevron to the right using a pseudo-element (works with most modern browsers) */
-#listSelect {
-  position: relative;
-  padding-right: 26px;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: calc(100% - 12px) calc(50% - 4px), calc(100% - 8px) calc(50% - 4px);
-  background-size: 6px 6px, 6px 6px;
-  background-repeat: no-repeat;
 }
 
 /* Compact layout for small screens */
-@media (max-width: 520px) {
-  .list-switcher {
-    gap: 0.4rem;
-    padding: 5px;
-    border-radius: 8px;
-  }
-  #listSelect {
-    padding: 5px 8px;
-    font-size: 0.9rem;
-  }
-  .list-switcher label { display:none; } /* hide label on narrow screens to save space */
+@media (max-width:520px) {
+  .list-switcher { gap: 0.4rem; padding: 4px; }
+  .list-switcher .list-btn { padding: 5px 9px; font-size: 0.9rem; }
+  #themeToggleBtn.secondary { padding: 5px 8px; font-size: 0.9rem; }
 }
-
